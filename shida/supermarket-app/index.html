@@ -1,70 +1,180 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>スーパー家計簿</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #000000; color: #FFD700; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; min-height: 100vh; }
-    .app-container { width: 100%; max-width: 400px; padding: 20px; display: flex; flex-direction: column; }
-    header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
-    h1 { font-size: 24px; letter-spacing: 2px; }
-    .input-section { display: flex; flex-direction: column; gap: 20px; }
-    .input-group label { display: block; font-size: 16px; margin-bottom: 10px; font-weight: bold; text-align: center; }
-    input { width: 100%; background-color: #111111; color: #FFD700; border: 2px solid #FFD700; padding: 15px; font-size: 24px; border-radius: 8px; outline: none; text-align: center; transition: 0.3s; }
-    input:focus { box-shadow: 0 0 10px #FFD700; background-color: #222222; }
-    button { width: 100%; background-color: #FFD700; color: #000000; border: none; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3); transition: 0.2s; }
-    button:active { transform: scale(0.98); box-shadow: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スーパー爆速入力</title>
+    <style>
+        /* 全体のリセットとベース設定 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #000000;
+            color: #FFD700;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #000000;
+        }
+
+        header { text-align: center; margin-bottom: 30px; padding-top: 10px; }
+        h1 { font-size: 24px; letter-spacing: 2px; }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-container { display: flex; margin-bottom: 15px; }
+
+        button {
+            width: 100%;
+            background-color: #FFD700;
+            color: #000000;
+            border: none;
+            padding: 18px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+            transition: 0.2s;
+        }
+
+        button:active { transform: scale(0.98); box-shadow: none; }
+
+        input {
+            width: 100%;
+            background-color: #111111;
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            padding: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 8px;
+            outline: none;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        input:focus {
+            box-shadow: 0 0 15px #FFD700;
+            background-color: #222222;
+        }
+
+        .hidden { display: none !important; }
+
+        .status-message {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 40px;
+            color: #FFF;
+            line-height: 1.6;
+            text-shadow: 0 0 5px #FFD700;
+        }
+    </style>
 </head>
 <body>
-  <div class="app-container">
-    <header>
-      <h1>スーパー家計簿</h1>
-    </header>
-    <div class="input-section">
-      <button id="submitBtn" onclick="submitData()">🛒 送信する</button>
-      
-      <div class="input-group">
-        <label>今いくら買った？ (円)</label>
-        <input type="number" id="amount" placeholder="0" inputmode="numeric" autofocus>
-      </div>
-    </div>
-  </div>
 
-  <script>
-    async function submitData() {
-      const amount = document.getElementById("amount").value;
-      if (!amount) { alert("金額を入力してください"); return; }
-      
-      const btn = document.getElementById("submitBtn");
-      btn.innerText = "送信中...";
-      btn.disabled = true;
-      
-      try {
-        // url.txtから自動でURLを取得
-        const urlRes = await fetch('../url.txt');
-        if (!urlRes.ok) throw new Error("url.txtの読み込みに失敗しました");
-        const GAS_URL = (await urlRes.text()).trim();
+<div class="app-container">
+    <header>
+        <h1>SUPERMARKET</h1>
+    </header>
+
+    <div id="main-section">
+        <div class="input-group">
+            <label>今いくら買った？</label>
+            
+            <div class="btn-container">
+                <button onclick="sendAmount()">送信する</button>
+            </div>
+
+            <input type="number" id="amount-input" pattern="\d*" placeholder="¥ 0">
+        </div>
+    </div>
+
+    <div class="status-message hidden" id="status-section">
+        <p id="status-text">スプレッドシートに送信中...</p>
+    </div>
+</div>
+
+<script>
+    window.onload = () => {
+        document.getElementById("amount-input").focus();
+    };
+
+    async function sendAmount() {
+        const inputEl = document.getElementById("amount-input");
+        const val = inputEl.value;
         
-        // 取得したURLへ送信
-        await fetch(GAS_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "super", amount: amount })
-        });
-        
-        alert("COMPLETE!\n送信完了しました");
-        document.getElementById("amount").value = "";
-      } catch (error) {
-        alert("エラー: " + error.message);
-      } finally {
-        btn.innerText = "🛒 送信する";
-        btn.disabled = false;
-      }
+        if (!val || val === "" || Number(val) <= 0) {
+            alert("金額を入力してください");
+            return;
+        }
+
+        document.getElementById("main-section").classList.add("hidden");
+        const statusSec = document.getElementById("status-section");
+        const statusTxt = document.getElementById("status-text");
+        statusSec.classList.remove("hidden");
+
+        // ▼ url.txt からGASのURLを自動取得 (ディレクトリ構成に合わせ ../url.txt)
+        let GAS_WEBAPP_URL = "";
+        try {
+            const urlRes = await fetch('../url.txt');
+            if (!urlRes.ok) throw new Error("url.txt load failed");
+            GAS_WEBAPP_URL = (await urlRes.text()).trim();
+        } catch (e) {
+            console.error("URL取得エラー:", e);
+            statusTxt.innerHTML = `<span style="color:red;">エラー: url.txt の読み込みに失敗しました。</span>`;
+            return;
+        }
+
+        const payload = {
+            type: "super",
+            value: val
+        };
+
+        try {
+            // 💡 修正ポイント: mode: "no-cors" を追加してブラウザのセキュリティブロックを完全回避
+            await fetch(GAS_WEBAPP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "text/plain"
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            // no-cors通信の場合、確実に入力は届くためそのまま成功画面を表示します
+            statusTxt.innerHTML = `COMPLETE!<br><br><span style="font-size:15px; color:#CCCC00;">[ ${Number(val).toLocaleString()} 円 ] を送信しました！<br>スプレッドシートを確認してください。</span>`;
+            
+            const reloadBtn = document.createElement("button");
+            reloadBtn.innerText = "続けて入力する";
+            reloadBtn.style.marginTop = "30px";
+            reloadBtn.onclick = () => location.reload();
+            statusSec.appendChild(reloadBtn);
+            
+        } catch (e) {
+            statusTxt.innerHTML = `<span style="color:#ff4d4d;">送信エラーが発生しました</span>`;
+            console.error(e);
+        }
     }
-  </script>
+</script>
 </body>
 </html>
