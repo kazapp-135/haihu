@@ -102,7 +102,7 @@
             <label>今いくら買った？</label>
             
             <div class="btn-container">
-                <button onclick="sendAmount()">送信する</button>
+                <button id="sendBtn" onclick="sendAmount()">送信する</button>
             </div>
 
             <input type="number" id="amount-input" pattern="\d*" placeholder="¥ 0">
@@ -110,7 +110,7 @@
     </div>
 
     <div class="status-message hidden" id="status-section">
-        <p id="status-text">スプレッドシートに送信中...</p>
+        <p id="status-text">通信準備中...</p>
     </div>
 </div>
 
@@ -122,6 +122,7 @@
     async function sendAmount() {
         const inputEl = document.getElementById("amount-input");
         const val = inputEl.value;
+        const sendBtn = document.getElementById("sendBtn");
         
         if (!val || val === "" || Number(val) <= 0) {
             alert("金額を入力してください");
@@ -132,15 +133,15 @@
         const statusSec = document.getElementById("status-section");
         const statusTxt = document.getElementById("status-text");
         statusSec.classList.remove("hidden");
+        statusTxt.innerHTML = "通信準備中...";
 
-        // ▼ url.txt からGASのURLを自動取得 (ディレクトリ構成に合わせ ../url.txt)
+        // url.txt の読み込み
         let GAS_WEBAPP_URL = "";
         try {
             const urlRes = await fetch('../url.txt');
             if (!urlRes.ok) throw new Error("url.txt load failed");
             GAS_WEBAPP_URL = (await urlRes.text()).trim();
         } catch (e) {
-            console.error("URL取得エラー:", e);
             statusTxt.innerHTML = `<span style="color:red;">エラー: url.txt の読み込みに失敗しました。</span>`;
             return;
         }
@@ -150,18 +151,16 @@
             value: val
         };
 
-        try {
-            // 💡 修正ポイント: mode: "no-cors" を追加してブラウザのセキュリティブロックを完全回避
-            await fetch(GAS_WEBAPP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: {
-                    "Content-Type": "text/plain"
-                },
-                body: JSON.stringify(payload)
-            });
-            
-            // no-cors通信の場合、確実に入力は届くためそのまま成功画面を表示します
+        // 食堂アプリと全く同じ通信方式に変更
+        fetch(GAS_WEBAPP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
             statusTxt.innerHTML = `COMPLETE!<br><br><span style="font-size:15px; color:#CCCC00;">[ ${Number(val).toLocaleString()} 円 ] を送信しました！<br>スプレッドシートを確認してください。</span>`;
             
             const reloadBtn = document.createElement("button");
@@ -169,11 +168,11 @@
             reloadBtn.style.marginTop = "30px";
             reloadBtn.onclick = () => location.reload();
             statusSec.appendChild(reloadBtn);
-            
-        } catch (e) {
+        })
+        .catch(error => {
             statusTxt.innerHTML = `<span style="color:#ff4d4d;">送信エラーが発生しました</span>`;
-            console.error(e);
-        }
+            console.error(error);
+        });
     }
 </script>
 </body>
