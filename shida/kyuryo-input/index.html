@@ -190,9 +190,9 @@
         { name: "組合費", label: "組合費はいくらですか？", type: "number" },
         { name: "福祉・総合", label: "福祉・総合はいくらですか？", type: "number" },
         { name: "住宅使用料（家賃）", label: "住宅使用料（家賃）はいくらですか？", type: "number" },
-        { name: "日産でんき", label: "日産でんき はいくらですか？", type: "number" },
-        { name: "東京ガス", label: "東京ガス はいくらですか？", type: "number" },
-        { name: "ahamo", label: "ahamo はいくらですか？", type: "number" },
+        { name: "電気", label: "電気 はいくらですか？", type: "number" },
+        { name: "ガス", label: "ガス はいくらですか？", type: "number" },
+        { name: "携帯", label: "携帯 はいくらですか？", type: "number" },
         { name: "WIFI", label: "WIFI はいくらですか？", type: "number" },
         { name: "水道", label: "水道 はいくらですか？", type: "number" },
         { name: "オートローン", label: "オートローンはいくらですか？", type: "number" }
@@ -324,6 +324,7 @@
         const keys = Object.keys(inputValues);
         let sentCount = 0;
         
+        // 全データを順番に送信
         for (let i = 0; i < keys.length; i++) {
             const rowName = keys[i];
             const value = inputValues[rowName];
@@ -341,10 +342,18 @@
             };
 
             try {
+                // 💡 修正ポイント：mode: "no-cors" と text/plain を追加！
                 await fetch(GAS_WEBAPP_URL, {
                     method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "text/plain"
+                    },
                     body: JSON.stringify(payload)
                 });
+                
+                // GAS側に負荷をかけすぎないよう、1件送るごとに少しだけ待つ（0.3秒）
+                await new Promise(resolve => setTimeout(resolve, 300));
             } catch (e) {
                 console.error("送信エラー:", e);
             }
