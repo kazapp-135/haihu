@@ -115,56 +115,51 @@
 </div>
 
 <script>
-    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyQv1KAVktmUT3KAhtLsggqykmKQ3MQ2JRNBzBvdYn3PgOmO1VTpSACWwIHQKF2cjeH/exec";
-    
-    window.onload = () => {
-        document.getElementById("amount-input").focus();
+function sendData() {
+    // inputタグから直接金額を引っこ抜く
+    const inputElem = document.querySelector("input");
+    const amount = inputElem ? inputElem.value : "";
+    const sendBtn = document.querySelector("button");
+
+    if (!amount || amount <= 0) {
+        alert("金額を入力してください！");
+        return;
+    }
+
+    // 送信中のUI変更
+    sendBtn.textContent = "送信中...";
+    sendBtn.disabled = true;
+
+    const payload = {
+        type: "super",
+        amount: Number(amount)
     };
 
-    async function sendAmount() {
-        const inputEl = document.getElementById("amount-input");
-        const val = inputEl.value;
-        
-        if (!val || val === "" || Number(val) <= 0) {
-            alert("金額を入力してください");
-            return;
-        }
-
-        document.getElementById("main-section").classList.add("hidden");
-        const statusSec = document.getElementById("status-section");
-        const statusTxt = document.getElementById("status-text");
-        statusSec.classList.remove("hidden");
-
-        const payload = {
-            type: "super",
-            value: val
-        };
-
-        try {
-            // 💡 修正ポイント: mode: "no-cors" を追加してブラウザのセキュリティブロックを完全回避
-            await fetch(GAS_WEBAPP_URL, {
+    // url.txtを読んでから送信
+    fetch('url.txt')
+        .then(response => response.text())
+        .then(text => {
+            const GAS_WEBAPP_URL = text.trim();
+            return fetch(GAS_WEBAPP_URL, {
                 method: "POST",
                 mode: "no-cors",
-                headers: {
-                    "Content-Type": "text/plain"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            
-            // no-cors通信の場合、確実に入力は届くためそのまま成功画面を表示します
-            statusTxt.innerHTML = `COMPLETE!<br><br><span style="font-size:15px; color:#CCCC00;">[ ${Number(val).toLocaleString()} 円 ] を送信しました！<br>スプレッドシートを確認してください。</span>`;
-            
-            const reloadBtn = document.createElement("button");
-            reloadBtn.innerText = "続けて入力する";
-            reloadBtn.style.marginTop = "30px";
-            reloadBtn.onclick = () => location.reload();
-            statusSec.appendChild(reloadBtn);
-            
-        } catch (e) {
-            statusTxt.innerHTML = `<span style="color:#ff4d4d;">送信エラーが発生しました</span>`;
-            console.error(e);
-        }
-    }
+        })
+        .then(() => {
+            sendBtn.textContent = "COMPLETE!";
+            if (inputElem) inputElem.value = "";
+            setTimeout(() => {
+                sendBtn.textContent = "送信する";
+                sendBtn.disabled = false;
+            }, 2000);
+        })
+        .catch(error => {
+            sendBtn.textContent = "エラー発生";
+            sendBtn.disabled = false;
+        });
+}
 </script>
 </body>
 </html>
