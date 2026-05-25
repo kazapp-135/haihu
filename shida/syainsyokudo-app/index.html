@@ -98,7 +98,10 @@
 </div>
 
 <script>
-    async function sendData() {
+    // ★★★ ここにGASのウェブアプリURLを貼り付ける ★★★
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyQv1KAVktmUT3KAhtLsggqykmKQ3MQ2JRNBzBvdYn3PgOmO1VTpSACWwIHQKF2cjeH/exec";
+
+    function sendData() {
         const amount = document.getElementById("amountInput").value;
         const statusMsg = document.getElementById("statusMsg");
         const sendBtn = document.getElementById("sendBtn");
@@ -114,22 +117,6 @@
         sendBtn.style.backgroundColor = "#550000";
         sendBtn.disabled = true;
         statusMsg.textContent = "";
-
-        // ▼ url.txt からGASのURLを自動取得 (ディレクトリ構成に合わせ ../url.txt)
-        let GAS_WEBAPP_URL = "";
-        try {
-            const urlRes = await fetch('../url.txt');
-            if (!urlRes.ok) throw new Error("url.txt load failed");
-            GAS_WEBAPP_URL = (await urlRes.text()).trim();
-        } catch (e) {
-            console.error("URL取得エラー:", e);
-            statusMsg.textContent = "エラー: url.txt の読み込みに失敗しました。";
-            statusMsg.style.color = "#FF3333";
-            sendBtn.textContent = "食堂代を送信";
-            sendBtn.style.backgroundColor = "#FF3333";
-            sendBtn.disabled = false;
-            return;
-        }
 
         const payload = {
             type: "shokudo",
