@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KAKEIBO APP</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #000000; color: #FFD700; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 400px; padding: 20px; display: flex; flex-direction: column; }
+    header { text-align: center; margin-bottom: 20px; padding-top: 10px; }
+    h1 { font-size: 24px; letter-spacing: 2px; }
+    .step-indicator { font-size: 12px; color: #CCCC00; margin-bottom: 10px; }
+    
+    /* ジャンプメニュー */
+    .jump-menu { width: 100%; background-color: #111100; color: #FFD700; border: 1px solid #555500; padding: 10px; border-radius: 6px; margin-bottom: 20px; outline: none; }
+    
+    .input-section { display: flex; flex-direction: column; gap: 15px; }
+    
+    /* ボタン群を入力欄の上に配置 */
+    .btn-container { display: flex; gap: 10px; margin-bottom: 10px; }
+    button { flex: 1; background-color: #FFD700; color: #000000; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3); }
+    button:active { transform: scale(0.98); box-shadow: none; }
+    .btn-secondary { background-color: #333333; color: #FFD700; box-shadow: none; }
+    .btn-submit { background-color: #FF9900; width: 100%; margin-top: 10px; }
+
+    .input-group label { display: block; font-size: 16px; margin-bottom: 10px; font-weight: bold; text-align: center; }
+    input, select { width: 100%; background-color: #111111; color: #FFD700; border: 2px solid #FFD700; padding: 15px; font-size: 20px; border-radius: 8px; outline: none; text-align: center; transition: 0.3s; }
+    input:focus, select:focus { box-shadow: 0 0 10px #FFD700; background-color: #222222; }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>KAKEIBO</h1>
+      <div class="step-indicator" id="stepIndicator">STEP: 1 / 28</div>
+      <select class="jump-menu" id="jumpMenu" onchange="jumpTo(this.value)"></select>
+    </header>
+
+    <div class="input-section">
+      <div class="btn-container">
+        <button class="btn-secondary" id="prevBtn" onclick="prevStep()">◀ 戻る</button>
+        <button id="nextBtn" onclick="nextStep()">次へ ▶</button>
+      </div>
+
+      <div class="input-group" id="inputContainer">
+        <label id="questionLabel">年月はいつですか？</label>
+        <div id="inputFieldArea"></div>
+      </div>
+
+      <button class="btn-submit" id="submitBtn" onclick="submitData()">📥 途中でも送信する</button>
+    </div>
+  </div>
+
+  <script>
+    // 全28項目の定義
+    const steps = [
+      { id: "month", label: "年月はいつですか？", type: "select", options: ["2026/04", "2026/05", "2026/06", "2026/07", "2026/08", "2026/09", "2026/10", "2026/11", "2026/12", "2027/01", "2027/02", "2027/03"] },
+      { id: "基準賃金", label: "基準賃金はいくらですか？", type: "number" },
+      { id: "家族手当", label: "家族手当はいくらですか？", type: "number" },
+      { id: "休暇手当", label: "休暇手当はいくらですか？", type: "number" },
+      { id: "残業手当", label: "残業手当はいくらですか？", type: "number" },
+      { id: "休出手当", label: "休出手当はいくらですか？", type: "number" },
+      { id: "その他手当1", label: "その他手当1はいくらですか？", type: "number" },
+      { id: "その他手当2", label: "その他手当2はいくらですか？", type: "number" },
+      { id: "交通費", label: "交通費はいくらですか？", type: "number" },
+      { id: "健康保険", label: "健康保険はいくらですか？", type: "number" },
+      { id: "厚生年金", label: "厚生年金はいくらですか？", type: "number" },
+      { id: "雇用保険", label: "雇用保険はいくらですか？", type: "number" },
+      { id: "介護保険", label: "介護保険はいくらですか？", type: "number" },
+      { id: "社保合計", label: "社会保険料の合計は？", type: "number" },
+      { id: "住民税", label: "住民税はいくらですか？", type: "number" },
+      { id: "所得税", label: "所得税はいくらですか？", type: "number" },
+      { id: "財形貯蓄", label: "財形貯蓄はいくらですか？", type: "number" },
+      { id: "組合費", label: "組合費はいくらですか？", type: "number" },
+      { id: "社宅費", label: "社宅費はいくらですか？", type: "number" },
+      { id: "生命保険", label: "生命保険はいくらですか？", type: "number" },
+      { id: "損害保険", label: "損害保険はいくらですか？", type: "number" },
+      { id: "電気代", label: "電気代はいくらですか？", type: "number" },
+      { id: "ガス代", label: "ガス代はいくらですか？", type: "number" },
+      { id: "水道代", label: "水道代はいくらですか？", type: "number" },
+      { id: "通信費", label: "通信費（スマホ等）はいくらですか？", type: "number" },
+      { id: "ahamo", label: "ahamoの料金はいくらですか？", type: "number" },
+      { id: "Wi-Fi", label: "Wi-Fiの料金はいくらですか？", type: "number" },
+      { id: "オートローン", label: "オートローンはいくらですか？", type: "number" }
+    ];
+
+    let currentStep = 0;
+    const dataStore = {};
+
+    function init() {
+      const jumpMenu = document.getElementById("jumpMenu");
+      steps.forEach((step, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.text = `${index + 1}. ${step.id}`;
+        jumpMenu.appendChild(option);
+      });
+      renderStep();
+    }
+
+    function renderStep() {
+      const step = steps[currentStep];
+      document.getElementById("stepIndicator").innerText = `STEP: ${currentStep + 1} / ${steps.length}`;
+      document.getElementById("jumpMenu").value = currentStep;
+      document.getElementById("questionLabel").innerText = step.label;
+      document.getElementById("prevBtn").style.visibility = currentStep === 0 ? "hidden" : "visible";
+      
+      const isLast = currentStep === steps.length - 1;
+      document.getElementById("nextBtn").innerText = isLast ? "完了" : "次へ ▶";
+      
+      const inputArea = document.getElementById("inputFieldArea");
+      inputArea.innerHTML = ""; // クリア
+
+      if (step.type === "select") {
+        const select = document.createElement("select");
+        select.id = "currentInput";
+        step.options.forEach(opt => {
+          const option = document.createElement("option");
+          option.value = opt;
+          option.text = opt;
+          select.appendChild(option);
+        });
+        if (dataStore[step.id]) select.value = dataStore[step.id];
+        inputArea.appendChild(select);
+      } else {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.id = "currentInput";
+        input.placeholder = "空白はスキップ";
+        if (dataStore[step.id]) input.value = dataStore[step.id];
+        inputArea.appendChild(input);
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+
+    function saveCurrentData() {
+      const val = document.getElementById("currentInput").value;
+      if (val !== "") {
+        dataStore[steps[currentStep].id] = val;
+      }
+    }
+
+    function nextStep() {
+      saveCurrentData();
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        renderStep();
+      } else {
+        submitData(); // 最後まで行ったら自動送信
+      }
+    }
+
+    function prevStep() {
+      saveCurrentData();
+      if (currentStep > 0) {
+        currentStep--;
+        renderStep();
+      }
+    }
+
+    function jumpTo(index) {
+      saveCurrentData();
+      currentStep = parseInt(index);
+      renderStep();
+    }
+
+    async function submitData() {
+      saveCurrentData();
+      if (!dataStore["month"]) {
+        alert("年月（STEP 1）が選択されていません！");
+        return;
+      }
+
+      const btn = document.getElementById("submitBtn");
+      btn.innerText = "送信中...";
+      btn.disabled = true;
+
+      try {
+        // url.txtから自動でURLを取得
+        const urlRes = await fetch('./url.txt');
+        if (!urlRes.ok) throw new Error("url.txtの読み込みに失敗しました");
+        const GAS_URL = (await urlRes.text()).trim();
+
+        // 蓄積されたデータ（空白以外）を送信
+        for (const [key, value] of Object.entries(dataStore)) {
+          if (key === "month") continue; 
+          await fetch(GAS_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ month: dataStore["month"], item: key, value: value })
+          });
+        }
+        
+        alert("COMPLETE!\nスプレッドシートへ送信しました！");
+      } catch (error) {
+        alert("エラー: " + error.message);
+      } finally {
+        btn.innerText = "📥 途中でも送信する";
+        btn.disabled = false;
+      }
+    }
+
+    // アプリ起動時の初期化
+    window.onload = init;
+  </script>
+</body>
+</html>

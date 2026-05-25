@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>スーパー家計簿</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #000000; color: #FFD700; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 400px; padding: 20px; display: flex; flex-direction: column; }
+    header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
+    h1 { font-size: 24px; letter-spacing: 2px; }
+    .input-section { display: flex; flex-direction: column; gap: 20px; }
+    .input-group label { display: block; font-size: 16px; margin-bottom: 10px; font-weight: bold; text-align: center; }
+    input { width: 100%; background-color: #111111; color: #FFD700; border: 2px solid #FFD700; padding: 15px; font-size: 24px; border-radius: 8px; outline: none; text-align: center; transition: 0.3s; }
+    input:focus { box-shadow: 0 0 10px #FFD700; background-color: #222222; }
+    button { width: 100%; background-color: #FFD700; color: #000000; border: none; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3); transition: 0.2s; }
+    button:active { transform: scale(0.98); box-shadow: none; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>スーパー家計簿</h1>
+    </header>
+    <div class="input-section">
+      <button id="submitBtn" onclick="submitData()">🛒 送信する</button>
+      
+      <div class="input-group">
+        <label>今いくら買った？ (円)</label>
+        <input type="number" id="amount" placeholder="0" inputmode="numeric" autofocus>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function submitData() {
+      const amount = document.getElementById("amount").value;
+      if (!amount) { alert("金額を入力してください"); return; }
+      
+      const btn = document.getElementById("submitBtn");
+      btn.innerText = "送信中...";
+      btn.disabled = true;
+      
+      try {
+        // url.txtから自動でURLを取得
+        const urlRes = await fetch('./url.txt');
+        if (!urlRes.ok) throw new Error("url.txtの読み込みに失敗しました");
+        const GAS_URL = (await urlRes.text()).trim();
+        
+        // 取得したURLへ送信
+        await fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "super", amount: amount })
+        });
+        
+        alert("COMPLETE!\n送信完了しました");
+        document.getElementById("amount").value = "";
+      } catch (error) {
+        alert("エラー: " + error.message);
+      } finally {
+        btn.innerText = "🛒 送信する";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
