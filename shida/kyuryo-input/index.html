@@ -169,6 +169,8 @@
 </div>
 
 <script>
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyQv1KAVktmUT3KAhtLsggqykmKQ3MQ2JRNBzBvdYn3PgOmO1VTpSACWwIHQKF2cjeH/exec";
+
     const steps = [
         { name: "年月", label: "年月はいつのですか？", type: "select", options: ["2026/04", "2026/05", "2026/06", "2026/07", "2026/08", "2026/09"] },
         { name: "基準賃金", label: "基準賃金はいくらですか？", type: "number" },
@@ -190,9 +192,9 @@
         { name: "組合費", label: "組合費はいくらですか？", type: "number" },
         { name: "福祉・総合", label: "福祉・総合はいくらですか？", type: "number" },
         { name: "住宅使用料（家賃）", label: "住宅使用料（家賃）はいくらですか？", type: "number" },
-        { name: "電気", label: "電気 はいくらですか？", type: "number" },
-        { name: "ガス", label: "ガス はいくらですか？", type: "number" },
-        { name: "携帯", label: "携帯 はいくらですか？", type: "number" },
+        { name: "日産でんき", label: "日産でんき はいくらですか？", type: "number" },
+        { name: "東京ガス", label: "東京ガス はいくらですか？", type: "number" },
+        { name: "ahamo", label: "ahamo はいくらですか？", type: "number" },
         { name: "WIFI", label: "WIFI はいくらですか？", type: "number" },
         { name: "水道", label: "水道 はいくらですか？", type: "number" },
         { name: "オートローン", label: "オートローンはいくらですか？", type: "number" }
@@ -309,22 +311,9 @@
         const statusTxt = document.getElementById("status-text");
         statusSec.classList.remove("hidden");
 
-        // ▼ url.txt からGASのURLを自動取得 (ディレクトリ構成に合わせ ../url.txt)
-        let GAS_WEBAPP_URL = "";
-        try {
-            const urlRes = await fetch('../url.txt');
-            if (!urlRes.ok) throw new Error("url.txt load failed");
-            GAS_WEBAPP_URL = (await urlRes.text()).trim();
-        } catch (e) {
-            console.error("URL取得エラー:", e);
-            statusTxt.innerHTML = `<span style="color:red;">エラー: url.txt の読み込みに失敗しました。</span>`;
-            return;
-        }
-
         const keys = Object.keys(inputValues);
         let sentCount = 0;
         
-        // 全データを順番に送信
         for (let i = 0; i < keys.length; i++) {
             const rowName = keys[i];
             const value = inputValues[rowName];
@@ -342,18 +331,10 @@
             };
 
             try {
-                // 💡 修正ポイント：mode: "no-cors" と text/plain を追加！
                 await fetch(GAS_WEBAPP_URL, {
                     method: "POST",
-                    mode: "no-cors",
-                    headers: {
-                        "Content-Type": "text/plain"
-                    },
                     body: JSON.stringify(payload)
                 });
-                
-                // GAS側に負荷をかけすぎないよう、1件送るごとに少しだけ待つ（0.3秒）
-                await new Promise(resolve => setTimeout(resolve, 300));
             } catch (e) {
                 console.error("送信エラー:", e);
             }
